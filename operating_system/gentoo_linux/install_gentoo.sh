@@ -218,6 +218,8 @@ function setup_portage() {
 
 	emerge sys-auth/elogind --autounmask-write \
 		|| true
+	# TODO Consider using --automode -5. It is described as such:
+	# "auto-merge AND not use 'mv -i'"
 	etc-update --automode -3 -q # Merge required USE flag changes
 
 	emerge --verbose --update --deep --newuse @world
@@ -247,6 +249,13 @@ function setup_locale() {
 
 function setup_kernel() {
 	emerge sys-kernel/gentoo-sources
+
+	eselect kernel set 1
+	if [ ! -L ${kernel_sources_dir} ] ; then
+		error_exit "Symbolic link to kernel sources not found"
+	fi
+
+	# TODO option for using .config_uefi
 	cp ${gentoo_config}/.config ${kernel_sources_dir}
 
 	pushd ${kernel_sources_dir}
@@ -313,7 +322,10 @@ function setup_new_system() {
 	echo "UUID=${boot_partition_uuid}	/boot	ext2	defaults,noatime	0 2" >> ${gentoo_config}/fstab
 	echo "UUID=${swap_partition_uuid}	none	swap				0 0" >> ${gentoo_config}/fstab
 	echo "UUID=${root_volume_uuid}	/	ext4	noatime			0 1" >> ${gentoo_config}/fstab
-	echo "UUID=${home_volume_uuid}	/home	ext2	defaults,noatime	0 1" >> ${gentoo_config}/fstab
+	if [ "TRUE" = "${cfg_setup_home_partition}" ] ; then
+		# TODO if LVM not in use, does home partition UUID get written here?
+		echo "UUID=${home_volume_uuid}	/home	ext2	defaults,noatime	0 1" >> ${gentoo_config}/fstab
+	fi
 	cat ${gentoo_config}/fstab >> /etc/fstab
 
 	echo "hostname=\"${new_hostname}\"" >> /etc/conf.d/hostname
@@ -324,7 +336,9 @@ function setup_new_system() {
 	# TODO change interface name, if incorrect
 	echo "config_${inet_if}=\"dhcp\"" >> /etc/conf.d/net
 	pushd /etc/init.d
-	ln -s net.lo net.${inet_if}
+	if [ ! -L "net.${inet_if}" ] ; then
+		ln -s net.lo net.${inet_if}
+	fi
 	popd
 	rc-update add net.${inet_if} default
 	# If interface name is changed, need to perform multiple steps.
@@ -343,6 +357,11 @@ function setup_new_system() {
 
 	emerge app-admin/sysklogd
 	rc-update add sysklogd default
+
+	# https://wiki.gentoo.org/wiki/Non_root_Xorg
+	# "The elogind users are recommended to add elogind to the boot
+	# runlevel."
+	rc-update add elogind boot
 	# TODO configure logrotate
 
 	if [ "TRUE" != "${DISABLED}" ] ; then
@@ -354,17 +373,31 @@ function setup_new_system() {
 	emerge net-misc/dhcpcd
 }
 
+function install_grub_to_disk() {
+	if [ "TRUE" = "${cfg_grub_for_efi}" ] ; then
+		if [ ! -d "/boot/efi" ] ;
+			mkdir /boot/efi
+		fi
+		error_exit "[MISSING_IMPLEMENTATION] Mount required partition (efi system partition(?)) to /boot/efi here" # <- add configuration as well
+		grub-install --target=x86_64-efi --efi-directory=/boot/efi
+		return
+	fi
+
+	grub-install ${main_block_device}
+}
+
 function setup_bootloader() {
-	if [ "TRUE" = "${cfg_set_efi64_grub_platform}" ] ; then
+	if [ "TRUE" = "${cfg_grub_for_efi}" ] ; then
+		# TODO only append once. If run multiple times,
+		# multiple identical rows added.
 		echo 'GRUB_PLATFORMS="efi-64"' >> /etc/portage/make.conf
 	fi
 
-	# TODO select whether to install for BIOS or UEFI
-
 	emerge sys-boot/grub:2
+	# TODO emerge sys-boot/os-prober (needs unmasking)
 
 	if [ "TRUE" = "${cfg_install_grub_to_disk}" ] ; then
-		grub-install ${main_block_device}
+		install_grub_to_disk
 	fi
 
 	grub-mkconfig -o /boot/grub/grub.cfg
@@ -376,6 +409,22 @@ function setup_packages() {
 	# TODO check that configuration updates are actually license updates.
 	etc-update --automode -3 -q # Merge USE flag and license changes
 	emerge x11-base/xorg-server
+
+	emerge --autounmask-write app-portage/pfl \
+		|| true
+	etc-update --automode -3 -q # Merge USE flag changes
+	emerge app-portage/pfl
+
+	emerge --autounmask-write app-admin/keepassxc \
+		|| true
+	etc-update --automode -3 -q # Merge USE flag changes
+	emerge app-admin/keepassxc
+
+	emerge --autounmask-write www-client/surf \
+		|| true
+	etc-update --automode -3 -q # Merge USE flag changes
+	emerge www-client/surf
+
 	emerge x11-terms/st \
 		x11-misc/dmenu \
 		x11-wm/dwm \
@@ -389,6 +438,9 @@ function setup_accounts() {
 	local -r username="testuser"
 	groupadd wheel
 	useradd -m -G wheel ${username}
+	# Enabling starting dwm as a non-root user. Permissions for
+	# /dev/fb0 required.
+	usermod -aG video ${username}
 }
 
 function setup_remote_access() {
@@ -428,6 +480,10 @@ function install_chroot() {
 
 function install_post_chroot() {
 	print_header "INSTALL_POST-CHROOT"
+
+	if [ "TRUE" = "${cfg_grub_for_efi}" -a ! -d "/sys/firmware/efi" ] ; then
+		error_exit "UEFI install, but missing /sys/firmware/efi"
+	fi
 
 	source /etc/profile
 
