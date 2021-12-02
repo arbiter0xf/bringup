@@ -29,15 +29,9 @@ readonly mountpoint_ram="${mountpoint_root}/mnt_ram"
 readonly chroot_mountpoint_ram="/mnt_ram"
 
 # Parse stage3 tar name from webpage.
-readonly frozen_stage3_release_dir="https://mirror.netcologne.de/gentoo/releases/amd64/autobuilds/current-stage3-amd64/"
-readonly stage3_tar="$(curl ${frozen_stage3_release_dir}	\
-	| grep stage3-amd64					\
-	| grep tar						\
-	| grep -v multilib					\
-	| grep -v systemd					\
-	| grep -v -e CONTENTS -e DIGESTS			\
-	| cut -d ">" -f 2					\
-	| cut -d "<" -f 1)"
+readonly stage3_version_info="$(curl http://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64-openrc.txt)"
+readonly frozen_stage3_release_dir="http://distfiles.gentoo.org/releases/amd64/autobuilds/current-stage3-amd64-openrc/"
+readonly stage3_tar="$(echo ${stage3_version_info} | cut -d '/' -f 2 | cut -c ' ' -f 1)"
 
 readonly gentoo_config="${script_root}/gentoo_config"
 
