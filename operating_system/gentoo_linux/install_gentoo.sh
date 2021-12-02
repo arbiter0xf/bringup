@@ -375,7 +375,7 @@ function setup_new_system() {
 
 function install_grub_to_disk() {
 	if [ "TRUE" = "${cfg_grub_for_efi}" ] ; then
-		if [ ! -d "/boot/efi" ] ;
+		if [ ! -d "/boot/efi" ] ; then
 			mkdir /boot/efi
 		fi
 		error_exit "[MISSING_IMPLEMENTATION] Mount required partition (efi system partition(?)) to /boot/efi here" # <- add configuration as well
