@@ -12,7 +12,7 @@ readonly cfg_should_setup_new_system="TRUE"
 readonly cfg_should_setup_bootloader="TRUE"
 readonly cfg_should_setup_packages="TRUE"
 
-readonly cfg_set_efi64_grub_platform="FALSE"
+readonly cfg_grub_for_efi="FALSE"
 readonly cfg_write_partition_using_sfdisk="TRUE"
 readonly cfg_write_partition_using_sgdisk="FALSE"
 readonly cfg_setup_home_partition="FALSE"
