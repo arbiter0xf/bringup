@@ -44,11 +44,11 @@ function process_args() {
 }
 
 function import_gentoo_gpg_key() {
+	gpg --keyserver hkps://keys.gentoo.org --recv-keys 0xBB572E0E2D182910
+
 	if [ "TRUE" != "${DISABLED}" ] ; then
-		# Was not able to connect to sks-keyservers.net
-		gpg --keyserver hkps://hkps.pool.sks-keyservers.net --recv-keys 0xBB572E0E2D182910
+		wget -O- https://gentoo.org/.well-known/openpgpkey/hu/wtktzo4gyuhzu8a4z5fdj3fgmr1u6tob?l=releng | gpg --import
 	fi
-	wget -O- https://gentoo.org/.well-known/openpgpkey/hu/wtktzo4gyuhzu8a4z5fdj3fgmr1u6tob?l=releng | gpg --import
 }
 
 function setup_date_and_time() {
