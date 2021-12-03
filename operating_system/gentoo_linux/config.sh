@@ -18,6 +18,7 @@ readonly cfg_write_partition_using_sgdisk="FALSE"
 readonly cfg_setup_home_partition="FALSE"
 readonly cfg_confirm_config="TRUE"
 readonly cfg_shutdown_when_done="TRUE"
+readonly cfg_skip_stage3_signature_verification="FALSE"
 
 # Will create grub config regardless of this option
 readonly cfg_install_grub_to_disk="TRUE"

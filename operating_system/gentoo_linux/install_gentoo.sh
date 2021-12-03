@@ -187,8 +187,10 @@ function setup_stage_tarball() {
 	# To be absolutely certain that everything is valid, verify the
 	# fingerprint shown with the fingerprint on the Gentoo signatures page.
 	# Gentoo signatures page: https://www.gentoo.org/downloads/signatures/
-	readonly gpg_match="Good signature from \"Gentoo Linux Release Engineering"
-	gpg --verify ${stage3_tar}.DIGESTS.asc 2>&1 | grep "${gpg_match}"
+	if [ "TRUE" != "${cfg_skip_stage3_signature_verification}" ] ; then
+		readonly gpg_match="Good signature from \"Gentoo Linux Release Engineering"
+		gpg --verify ${stage3_tar}.DIGESTS.asc 2>&1 | grep "${gpg_match}"
+	fi
 
 	readonly signed_sum="$(grep -A1 SHA512 ${stage3_tar}.DIGESTS.asc | head -2 | grep -v SHA512)"
 	readonly calculated_sum="$(sha512sum ${stage3_tar})"
