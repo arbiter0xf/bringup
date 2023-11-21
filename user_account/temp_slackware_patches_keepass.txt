@@ -1,0 +1,6 @@
+Only in ./keepassxc-2.7.6/src/keys: .FileKey.h.swo
+Only in ./keepassxc-2.7.6/src/keys: .FileKey.h.un~
+diff --recursive ./keepassxc-2.7.6/src/keys/FileKey.h ./keepassxc-2.7.6_unmodified/src/keys/FileKey.h
+23d22
+< #include <botan/mem_ops.h>
+Only in ./keepassxc-2.7.6/src/keys: FileKey.h~
